@@ -1,27 +1,21 @@
-# Env / secrets
+# Secrets
 .env
 
 # Python
 __pycache__/
 *.py[cod]
-*.egg-info/
 .pytest_cache/
 .venv/
 venv/
 
-# Data (generated at runtime; keep directory placeholders)
-data/uploads/**
-!data/uploads/jds/
-!data/uploads/jds/.gitkeep
-!data/uploads/resumes/
-!data/uploads/resumes/.gitkeep
-data/chroma/**
-!data/chroma/.gitkeep
-data/app.db
-data/app.db-journal
+# Node
+node_modules/
+frontend/dist/
 
-# Streamlit
-.streamlit/secrets.toml
+# Runtime data
+data/app.db
+data/uploads/**
+!data/uploads/.gitkeep
 
 # OS / editor
 .DS_Store

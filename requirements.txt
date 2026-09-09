@@ -1,43 +1,26 @@
-# --- Backend API ---
+# --- API ---
 fastapi>=0.115,<1.0
 uvicorn[standard]>=0.32,<1.0
-python-multipart>=0.0.12  # required by FastAPI for file uploads
-
-# --- Frontend ---
-streamlit>=1.39,<2.0
-requests>=2.32,<3.0
+python-multipart>=0.0.12        # file uploads
 
 # --- Config / validation ---
 pydantic>=2.9,<3.0
 pydantic-settings>=2.5,<3.0
-python-dotenv>=1.0,<2.0
 
-# --- DB ---
+# --- Database ---
 sqlalchemy>=2.0,<3.0
 
-# --- LLM orchestration ---
-langchain>=0.3,<0.4
-langchain-core>=0.3,<0.4
+# --- LLM (swap providers with LLM_PROVIDER in .env) ---
+langchain-core>=0.3,<1.0
 langchain-google-genai>=2.0,<3.0
-langchain-openai>=0.2,<0.3   # stub adapter only, proves provider-swap ability
-chromadb>=0.5,<0.6
-langchain-chroma>=0.2,<0.3    # LangChain's Chroma wrapper - takes our get_embeddings() directly
-langchain-text-splitters>=0.3,<0.4
-tenacity>=9.0,<10.0          # retry/backoff for the LLM wrapper
+langchain-openai>=0.2,<1.0
+tenacity>=9.0,<10.0             # retry on rate limits
 
-# --- File parsing ---
-pypdf>=5.0,<6.0
+# --- Reading resume files ---
 pdfplumber>=0.11,<1.0
 python-docx>=1.1,<2.0
-striprtf>=0.0.26             # RTF support
-pytesseract>=0.3.13,<1.0     # OCR fallback (requires system `tesseract-ocr`)
-pdf2image>=1.17,<2.0         # scanned-PDF -> images (requires system `poppler-utils`)
-Pillow>=10.4,<11.0
-
-# --- Data export ---
-pandas>=2.2,<3.0
-openpyxl>=3.1,<4.0           # Excel export
+striprtf>=0.0.26
 
 # --- Tests ---
 pytest>=8.3,<9.0
-httpx>=0.27,<1.0             # used by FastAPI's TestClient
+httpx>=0.27,<1.0                # FastAPI TestClient

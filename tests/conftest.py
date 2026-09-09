@@ -1,31 +1,33 @@
-"""Shared fixtures. An isolated temp SQLite DB and temp upload dirs per test
-that touches the DB - opt in with the `isolated_db` fixture.
-"""
+"""Test fixtures: a throwaway SQLite file and upload dir per test run."""
 
 import pytest
 
-from backend.core.config import get_settings
-from backend.db.session import get_engine, get_sessionmaker, init_db
+
+@pytest.fixture(autouse=True)
+def temp_env(tmp_path, monkeypatch):
+    """Point the app at a temp DB/upload dir, and reset the cached settings,
+    engine and sessionmaker so each test gets a clean database."""
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path}/test.db")
+    monkeypatch.setenv("UPLOAD_DIR", str(tmp_path / "uploads"))
+    monkeypatch.setenv("GOOGLE_API_KEY", "test-key-not-used")
+
+    from backend import config, database
+
+    for cached in (config.get_settings, database._engine, database._sessionmaker):
+        cached.cache_clear()
+
+    database.init_db()
+    yield
+
+    for cached in (config.get_settings, database._engine, database._sessionmaker):
+        cached.cache_clear()
 
 
 @pytest.fixture
-def isolated_db(monkeypatch, tmp_path):
-    """Point DATABASE_URL and the upload dirs at a throwaway tmp_path so
-    tests never write into the real project's data/ directory, and
-    (re)create all tables.
-    """
-    db_path = tmp_path / "test.db"
-    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{db_path}")
-    monkeypatch.setenv("UPLOAD_DIR_JDS", str(tmp_path / "uploads" / "jds"))
-    monkeypatch.setenv("UPLOAD_DIR_RESUMES", str(tmp_path / "uploads" / "resumes"))
-    monkeypatch.setenv("CHROMA_DIR", str(tmp_path / "chroma"))
-    get_settings.cache_clear()
-    get_engine.cache_clear()
-    get_sessionmaker.cache_clear()
+def client(temp_env):
+    from fastapi.testclient import TestClient
 
-    init_db()
-    yield
+    from backend.main import app
 
-    get_settings.cache_clear()
-    get_engine.cache_clear()
-    get_sessionmaker.cache_clear()
+    with TestClient(app) as c:
+        yield c

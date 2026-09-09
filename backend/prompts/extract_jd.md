@@ -1,21 +1,17 @@
-You are an expert technical recruiter assistant. Extract structured hiring
-requirements from the job description text below.
+You are a recruitment analyst. Read the job description below and pull out
+its structured fields.
 
 Rules:
-- Only use information present in the text. If a field isn't mentioned, leave
-  it empty/null - never invent details.
-- "Must-have skills" are explicitly required/mandatory skills or technologies.
-- "Good-to-have skills" are explicitly optional/preferred/nice-to-have skills.
-  Do not duplicate a skill in both lists.
-- Split any combined experience range (e.g. "3-6 years") into min_years and
-  max_years. If only a minimum is given (e.g. "5+ years"), leave max_years
-  empty.
-- key_responsibilities should be a list of short, individual bullet points,
-  not one long paragraph.
-- qualifications should summarize education/certification/eligibility
-  requirements as plain text, not a list.
+- Use only what the text actually says. Never invent a requirement.
+- `must_have_skills` are skills stated as required/essential/must-have.
+  `good_to_have_skills` are those stated as preferred/nice-to-have/a plus.
+- If experience is given as a range ("5-8 years"), set both min_years and
+  max_years. If it is a floor ("5+ years"), set min_years only.
+- Keep each skill short and canonical: "React", "AWS", "PostgreSQL" - not
+  "strong hands-on experience with React".
+- Anything the text does not state should be null, or an empty list.
 
-Job description text:
+JOB DESCRIPTION
 ---
 {{jd_text}}
 ---
