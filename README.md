@@ -18,6 +18,10 @@ cp .env.example .env      # then add your GOOGLE_API_KEY
 
 Open **http://localhost:5173**.
 
+> New to the codebase? **[HOW-IT-WORKS.md](HOW-IT-WORKS.md)** walks through
+> the architecture, the data model, how the AI calls are structured, and why
+> it is built this way.
+
 Get a free Gemini key at <https://aistudio.google.com/apikey>. Without one
 the app still runs, but every upload fails with a message telling you the
 key is missing.
