@@ -14,7 +14,6 @@ sqlalchemy>=2.0,<3.0
 langchain-core>=0.3,<1.0
 langchain-google-genai>=2.0,<3.0
 langchain-openai>=0.2,<1.0
-tenacity>=9.0,<10.0             # retry on rate limits
 
 # --- Reading resume files ---
 pdfplumber>=0.11,<1.0

@@ -9,6 +9,12 @@ Rules:
   max_years. If it is a floor ("5+ years"), set min_years only.
 - Keep each skill short and canonical: "React", "AWS", "PostgreSQL" - not
   "strong hands-on experience with React".
+- When a requirement offers alternatives or examples in brackets - "AWS
+  (ECS, Lambda, or EKS)", "FastAPI (or Django REST)" - record ONLY the
+  umbrella skill: "AWS", "FastAPI". Never split the bracketed options into
+  separate skills. Each must-have skill is scored individually later, so
+  splitting them punishes a candidate for not having used every
+  alternative, when the role only ever asked for one of them.
 - Anything the text does not state should be null, or an empty list.
 
 JOB DESCRIPTION

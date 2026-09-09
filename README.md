@@ -125,7 +125,7 @@ object back, because LangChain gives every provider the same interface.
 ```dotenv
 # Gemini
 LLM_PROVIDER=gemini
-LLM_MODEL=gemini-2.5-flash
+LLM_MODEL=gemini-3.1-flash-lite
 GOOGLE_API_KEY=...
 
 # OpenAI - no code changes
@@ -146,13 +146,42 @@ FIT_BEST_MIN=75      # >= 75  -> Best
 FIT_MEDIUM_MIN=45    # >= 45  -> Medium, below -> No
 ```
 
-Hitting rate limits on the free tier? Lower `MAX_PARALLEL_RESUMES`.
+### Free-tier quotas (read this before a demo)
+
+The Gemini free tier limits you **per model, per minute and per day**, and
+the daily caps are small — `gemini-3.8-flash` allows only **20 requests a
+day**. Each resume costs one call, and each assessment one more.
+
+The default is therefore **`gemini-3.1-flash-lite`**, which has a far larger
+daily allowance and scored the same candidates in the same order as the
+bigger model in testing. Swap to `gemini-3.8-flash` for the best possible
+extraction quality if you are on a paid key, or for a small, high-stakes
+batch.
+
+`LLM_RPM_CAP` (default 5, matching the free tier) paces calls so a bulk
+upload spreads out instead of bursting into a 429 and waiting out a backoff.
+Raise it on a paid plan to screen faster:
+
+```dotenv
+LLM_RPM_CAP=5            # requests per minute
+MAX_PARALLEL_RESUMES=4   # screening threads
+```
+
+The daily quota is **per model**, so if you exhaust one, switching
+`LLM_MODEL` gives you a fresh allowance.
+
+Retries are left to the provider SDK and capped at `MAX_RETRIES` in
+`backend/llm.py`. There is deliberately no second retry layer on top: when
+one was there, an exhausted daily quota took *minutes* to surface instead of
+failing fast. A call that does fail marks that resume `FAILED` with the
+reason, and the table gives you a Retry button.
 
 ---
 
 ## Notes and limits
 
-- **One LLM call per resume** does the extraction and the scoring together.
+- **One LLM call per resume** does the extraction and the scoring together,
+  which matters when the free tier meters you by the call.
 - **No vector database.** A resume is 1–3 pages and fits in well under 1% of
   the model's context window, so the whole thing goes into the prompt.
   Retrieval could only ever give the model *less* of the resume. If you later

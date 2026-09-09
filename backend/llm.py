@@ -12,8 +12,8 @@ from pathlib import Path
 from typing import TypeVar
 
 from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.rate_limiters import InMemoryRateLimiter
 from pydantic import BaseModel
-from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential_jitter
 
 from .config import get_settings
 
@@ -22,9 +22,11 @@ logger = logging.getLogger(__name__)
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 T = TypeVar("T", bound=BaseModel)
 
-# Free-tier Gemini rate-limits readily, so retry those but fail fast on a
-# genuinely bad request that would just fail again identically.
-_TRANSIENT = ("429", "rate limit", "quota", "timeout", "unavailable", "503", "internal error")
+# How many times the provider SDK retries a transient failure before we
+# give up. Kept low so an exhausted quota surfaces as an error the
+# recruiter can act on instead of a request that hangs for minutes.
+MAX_RETRIES = 2
+
 
 
 @lru_cache
@@ -36,17 +38,35 @@ def get_model() -> BaseChatModel:
             f"Add {'GOOGLE_API_KEY' if s.LLM_PROVIDER == 'gemini' else 'OPENAI_API_KEY'} to your .env file."
         )
 
+    # Paces every call, including those the screening threads make in
+    # parallel, so a bulk upload spreads out instead of tripping a 429.
+    limiter = InMemoryRateLimiter(
+        requests_per_second=s.LLM_RPM_CAP / 60,
+        check_every_n_seconds=0.5,
+        max_bucket_size=1,
+    )
+
     if s.LLM_PROVIDER == "gemini":
         from langchain_google_genai import ChatGoogleGenerativeAI
 
         return ChatGoogleGenerativeAI(
-            model=s.LLM_MODEL, google_api_key=s.api_key, temperature=s.LLM_TEMPERATURE
+            model=s.LLM_MODEL,
+            google_api_key=s.api_key,
+            temperature=s.LLM_TEMPERATURE,
+            rate_limiter=limiter,
+            max_retries=MAX_RETRIES,
         )
 
     if s.LLM_PROVIDER == "openai":
         from langchain_openai import ChatOpenAI
 
-        return ChatOpenAI(model=s.LLM_MODEL, api_key=s.api_key, temperature=s.LLM_TEMPERATURE)
+        return ChatOpenAI(
+            model=s.LLM_MODEL,
+            api_key=s.api_key,
+            temperature=s.LLM_TEMPERATURE,
+            rate_limiter=limiter,
+            max_retries=MAX_RETRIES,
+        )
 
     raise ValueError(f"Unknown LLM_PROVIDER '{s.LLM_PROVIDER}'. Use 'gemini' or 'openai'.")
 
@@ -59,13 +79,15 @@ def load_prompt(name: str, **values: str) -> str:
     return text
 
 
-@retry(
-    stop=stop_after_attempt(3),
-    wait=wait_exponential_jitter(initial=2, max=30),
-    retry=retry_if_exception(lambda e: any(m in str(e).lower() for m in _TRANSIENT)),
-    reraise=True,
-)
 def ask(prompt: str, schema: type[T]) -> T:
-    """Send `prompt` to the configured model and return a validated `schema`."""
+    """Send `prompt` to the configured model and return a validated `schema`.
+
+    There is no retry wrapper here on purpose. Both provider SDKs already
+    retry transient errors internally (bounded by MAX_RETRIES below), and
+    stacking a second layer on top multiplied the wait rather than shortening
+    it - an exhausted daily quota once took minutes to surface as an error.
+    A call that still fails marks the row FAILED with the reason, and the UI
+    offers a Retry button.
+    """
     logger.info("LLM call -> %s", schema.__name__)
     return get_model().with_structured_output(schema).invoke(prompt)
